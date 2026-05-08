@@ -1,0 +1,28 @@
+{
+  "name": "todo-unit-testing-demo",
+  "version": "1.0.0",
+  "description": "A Todo application demonstrating good vs bad unit testing practices from 'The Art of Unit Testing' by Roy Osherove",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:bad": "jest tests/bad --verbose",
+    "test:good": "jest tests/good --verbose",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "demo": "echo 'Run npm run test:bad to see failing/brittle tests, then npm run test:good to see proper tests'"
+  },
+  "keywords": ["unit-testing", "jest", "todo", "presentation", "art-of-unit-testing"],
+  "author": "Demo Project",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/**/*.spec.js",
+      "!src/**/*.test.js"
+    ]
+  }
+}
