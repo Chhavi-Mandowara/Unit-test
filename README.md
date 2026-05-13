@@ -240,9 +240,8 @@ node demo-refactor.js
 ```
 ├── src/
 │   ├── services/
-│   │   ├── todo-service.js
+│   │   ├── todo-service.js          # includes commented “refactored” variants for demos
 │   │   ├── todo-service.spec.js
-│   │   ├── todo-service.refactored.js
 │   │   ├── logger.js
 │   │   ├── logger.spec.js
 │   │   ├── notification-service.js
@@ -299,3 +298,9 @@ After this presentation, your team will understand:
 **Made for learning, not for production** 📚
 
 This codebase is intentionally structured to demonstrate testing concepts. Focus on the testing strategies, not the application architecture.
+
+
+
+
+
+https://www.amazon.in/Art-Unit-Testing-Third-JavaScript/dp/1617297488

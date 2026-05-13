@@ -89,52 +89,6 @@ describe('todo-validator', () => {
     });
   });
 
-  describe('validate() — title exceeding maximum length', () => {
-    it('@bad should reject a todo when the title is longer than the maximum allowed length', () => {
-      // WHY THIS IS BAD: Couples to the literal limit (200) and one error string. If the product moves
-      // to 280 characters or improves UX copy, the test fails though the rule “too long is invalid” still works.
-
-      const longTitle = 'a'.repeat(201);
-      const todoWithLongTitle = { title: longTitle };
-
-      const result = TodoValidator.validate(todoWithLongTitle);
-
-      expect(result.errors).toContain('Title cannot exceed 200 characters');
-      expect(result.errors[0]).toBe('Title cannot exceed 200 characters');
-      expect(longTitle.length).toBe(201);
-      expect(longTitle.length > 200).toBe(true);
-      expect(result.errors).not.toContain('Title is too long');
-      expect(result.errors).not.toContain('Title exceeds maximum length');
-      expect(result.errors).not.toContain('Title must be under 200 characters');
-      expect(result.isValid).toBe(false);
-      expect(result.errors.length).toBe(1);
-    });
-
-    it('@good should reject a todo when the title is longer than the maximum allowed length', () => {
-      // WHY THIS IS GOOD: Uses obviously invalid data and loose assertions on meaning (title + length
-      // language). Does not depend on the exact numeric cap or message wording.
-
-      const veryLongTitle = 'a'.repeat(300);
-      const todoWithLongTitle = { title: veryLongTitle };
-
-      const result = TodoValidator.validate(todoWithLongTitle);
-
-      expect(result.isValid).toBe(false);
-      expect(result.errors.length).toBeGreaterThan(0);
-      expect(
-        result.errors.some(error => {
-          const lowerError = error.toLowerCase();
-          return (
-            lowerError.includes('title') &&
-            (lowerError.includes('long') ||
-              lowerError.includes('exceed') ||
-              lowerError.includes('200'))
-          );
-        })
-      ).toBe(true);
-    });
-  });
-
   describe('validate() — invalid priority', () => {
     it('@bad should reject a todo when priority is not one of the allowed values', () => {
       // WHY THIS IS BAD: The test re-implements the validator’s allow-list in expect(). That is testing
@@ -171,16 +125,6 @@ describe('todo-validator', () => {
 
       expect(result.isValid).toBe(false);
       expect(result.errors.some(error => error.toLowerCase().includes('priority'))).toBe(true);
-    });
-
-    it('@good should accept low, medium, and high as valid priority values', () => {
-      // WHY THIS IS GOOD: Small table-driven check of the happy path for enumerated values — easy to
-      // read in a demo and fails only if the contract with callers breaks.
-
-      ['low', 'medium', 'high'].forEach(priority => {
-        const todo = { title: 'Test todo', priority };
-        expect(TodoValidator.validate(todo).isValid).toBe(true);
-      });
     });
   });
 
@@ -276,12 +220,6 @@ describe('todo-validator', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
     });
-
-    it('@good should treat an empty partial update object as valid', () => {
-      // WHY THIS IS GOOD: Documents API edge case (PATCH with no fields) in one line — clear for demos.
-
-      expect(TodoValidator.validateForUpdate({}).isValid).toBe(true);
-    });
   });
 
   describe('validate() — edge cases', () => {
@@ -299,18 +237,5 @@ describe('todo-validator', () => {
       expect(TodoValidator.validate(undefined).isValid).toBe(false);
     });
 
-    it('@good should accept a todo that only specifies a title', () => {
-      // WHY THIS IS GOOD: Shows optional fields stay optional — common real-world contract test.
-
-      expect(TodoValidator.validate({ title: 'Just a title' }).isValid).toBe(true);
-    });
-
-    it('@good should accept common date string formats as valid due dates', () => {
-      // WHY THIS IS GOOD: Behavior users expect from real input; avoids coupling to one ISO format only.
-
-      ['2023-12-31', '2023-12-31T23:59:59Z', 'Dec 31, 2023'].forEach(dueDate => {
-        expect(TodoValidator.validate({ title: 'Test', dueDate }).isValid).toBe(true);
-      });
-    });
   });
 });

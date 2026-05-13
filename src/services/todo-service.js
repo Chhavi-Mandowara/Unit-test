@@ -29,6 +29,14 @@ class TodoService {
         createdAt: this.clock.now().toISOString(),
         updatedAt: this.clock.now().toISOString()
       };
+      // const at = this.clock.now().toISOString();
+      // const todo = {
+      //   ...todoData,
+      //   status: 'pending',
+      //   createdAt: at,
+      //   updatedAt: at
+      // };
+
 
       const savedTodo = await this.todoRepository.save(todo);
 
@@ -175,6 +183,7 @@ class TodoService {
   async sendDailyDigest(userEmail) {
     this.logger.info('Sending daily digest', { userEmail });
 
+    //swap here
     try {
       const todoCount = await this.todoRepository.count();
       const pendingTodos = await this.todoRepository.findByStatus('pending');
