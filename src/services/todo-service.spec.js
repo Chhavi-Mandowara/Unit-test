@@ -19,15 +19,6 @@ expect.extend({
   }
 });
 
-/**
- * One `describe` per feature. Back-to-back: `@bad` then `@good` (same scenario, different assertion style).
- * Titles name **one scenario** (one behavior under test). Several `expect`s can still support that single
- * outcome — “one thing” means one logical result, not necessarily one matcher.
- * `// WHY THIS IS BAD` / `// WHY THIS IS GOOD` explain how the assertions are written, not the scenario.
- *
- * npm run test:bad  → jest --testNamePattern "@bad"
- * npm run test:good → jest --testNamePattern "@good"
- */
 describe('todo-service', () => {
   function createWithBadMocks() {
     const mockRepository = {

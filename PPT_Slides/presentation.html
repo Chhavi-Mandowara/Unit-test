@@ -1,0 +1,2721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Testing Presentation</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        ::selection {
+            background: transparent;
+        }
+        
+        ::-moz-selection {
+            background: transparent;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            overflow: hidden;
+        }
+        
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .slides-wrapper {
+            display: flex;
+            width: 1500vw; /* 15 slides * 100vw */
+            height: 100vh;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .slide {
+            width: 100vw;
+            height: 100vh;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #1a1a1a;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /*
+         * Off-screen slides are still in the DOM, so CSS animations would finish
+         * before you navigate to them. Only run animations on the visible slide.
+         */
+        .slide:not(.is-active) *,
+        .slide:not(.is-active) *::before,
+        .slide:not(.is-active) *::after {
+            animation: none !important;
+        }
+        
+        /* Contentstack Logo */
+        .contentstack-logo {
+            position: absolute;
+            top: 60px;
+            left: 80px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 10;
+        }
+        
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #8a2be2 0%, #b967db 100%);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .logo-icon::before {
+            content: '';
+            width: 16px;
+            height: 2px;
+            background: white;
+            border-radius: 1px;
+            position: absolute;
+            top: 10px;
+        }
+        
+        .logo-icon::after {
+            content: '';
+            width: 16px;
+            height: 2px;
+            background: white;
+            border-radius: 1px;
+            position: absolute;
+            bottom: 10px;
+        }
+        
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        /* Navigation Controls */
+        .nav-controls {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+        
+        .nav-btn {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(138, 43, 226, 0.3);
+        }
+        
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(138, 43, 226, 0.4);
+        }
+        
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Slide Counter */
+        .slide-counter {
+            position: fixed;
+            bottom: 40px;
+            left: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 500;
+            z-index: 1000;
+        }
+        
+        /* Progress Bar */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+            transition: width 0.6s ease;
+            z-index: 1000;
+        }
+        
+        /* Floating Particles */
+        .floating-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .floating-particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(138, 43, 226, 0.3);
+            border-radius: 50%;
+            animation: floatParticle 8s ease-in-out infinite, fadeIn 1s ease-out forwards;
+            animation-delay: 2s, 2s;
+        }
+        
+        .floating-particle:nth-child(1) {
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .floating-particle:nth-child(2) {
+            top: 20%;
+            right: 15%;
+            animation-delay: 2s;
+            background: rgba(0, 212, 170, 0.3);
+        }
+        
+        .floating-particle:nth-child(3) {
+            bottom: 30%;
+            left: 20%;
+            animation-delay: 4s;
+            background: rgba(116, 185, 255, 0.3);
+        }
+        
+        .floating-particle:nth-child(4) {
+            bottom: 20%;
+            right: 25%;
+            animation-delay: 6s;
+            background: rgba(238, 130, 238, 0.3);
+        }
+        
+        @keyframes floatParticle {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            25% { transform: translateY(-20px) rotate(90deg); }
+            50% { transform: translateY(0px) rotate(180deg); }
+            75% { transform: translateY(10px) rotate(270deg); }
+        }
+        
+        @keyframes popQuote {
+            0% { 
+                opacity: 0; 
+                transform: scale(0.3) rotateZ(-10deg); 
+            }
+            50% { 
+                opacity: 0.8; 
+                transform: scale(1.1) rotateZ(2deg); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1) rotateZ(0deg); 
+            }
+        }
+        
+        @keyframes slideInFromLeft {
+            0% {
+                opacity: 0;
+                transform: translateX(-100px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes dramaticPop {
+            0% { 
+                opacity: 0; 
+                transform: scale(0.1) rotateZ(-15deg); 
+            }
+            20% { 
+                opacity: 0.3; 
+                transform: scale(0.5) rotateZ(-5deg); 
+            }
+            60% { 
+                opacity: 0.9; 
+                transform: scale(1.2) rotateZ(3deg); 
+            }
+            80% { 
+                opacity: 1; 
+                transform: scale(0.95) rotateZ(-1deg); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1) rotateZ(0deg); 
+            }
+        }
+        
+        /* SLIDE 1: TITLE SLIDE */
+        .slide1 .title-slide-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            padding: 60px;
+        }
+        
+        .slide1 .presentation-title {
+            font-size: 96px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            line-height: 1;
+            animation: zoomInRotate 1.5s ease-out forwards;
+        }
+        
+        .slide1 .presentation-subtitle {
+            font-size: 32px;
+            color: white;
+            font-weight: 300;
+            margin-bottom: 60px;
+            opacity: 0.9;
+            animation: fadeInUp 1s ease-out 0.5s both;
+        }
+        
+        .slide1 .presenter-info {
+            margin-bottom: 60px;
+        }
+        
+        .slide1 .presenter-name {
+            font-size: 24px;
+            color: #8a2be2;
+            font-weight: 600;
+            margin-bottom: 10px;
+            animation: slideInLeft 1s ease-out 1s both;
+        }
+        
+        .slide1 .presentation-date {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 400;
+            animation: slideInRight 1s ease-out 1.2s both;
+        }
+        
+        .slide1 .slide-image {
+            background: rgba(138, 43, 226, 0.1);
+            border: 2px solid #8a2be2;
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 600px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(138, 43, 226, 0.3);
+            font-size: 18px;
+            line-height: 1.6;
+            animation: fadeIn 1s ease-out 1.5s both;
+            opacity: 0;
+        }
+        
+        .slide1 .code-line {
+            margin-bottom: 8px;
+        }
+        
+        .slide1 .keyword { color: #66d9ef; }
+        .slide1 .string { color: #e6db74; }
+        .slide1 .method { color: #a6e22e; }
+        .slide1 .variable { color: #f8f8f2; }
+        .slide1 .boolean { color: #ae81ff; }
+        
+        /* SLIDE 2: AGENDA */
+        .slide2 .slide-content {
+            padding: 120px 80px 60px 80px;
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .slide2 .main-title {
+            font-size: 72px;
+            color: #8a2be2;
+            margin-bottom: 60px;
+            font-weight: 700;
+            text-align: center;
+            animation: fadeInDown 1s ease-out forwards;
+            opacity: 0;
+        }
+        
+        .slide2 .agenda-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        .slide2 .agenda-item {
+            margin-bottom: 25px;
+            font-size: 24px;
+            color: white;
+            font-weight: 500;
+            line-height: 1.6;
+            opacity: 0;
+            position: relative;
+            padding-left: 40px;
+            transform: translateX(-100px);
+            animation: slideInFromLeft 0.6s ease-out forwards;
+        }
+        
+        .slide2 .agenda-item:hover {
+            color: #b967db;
+            transform: translateX(10px);
+        }
+        
+        .slide2 .agenda-item:before {
+            content: '•';
+            color: #8a2be2;
+            font-size: 30px;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        
+        .slide2 .agenda-item:nth-child(1) { animation-delay: 0.5s; }
+        .slide2 .agenda-item:nth-child(2) { animation-delay: 0.8s; }
+        .slide2 .agenda-item:nth-child(3) { animation-delay: 1.1s; }
+        .slide2 .agenda-item:nth-child(4) { animation-delay: 1.4s; }
+        .slide2 .agenda-item:nth-child(5) { animation-delay: 1.7s; }
+        .slide2 .agenda-item:nth-child(6) { animation-delay: 2.0s; }
+        .slide2 .agenda-item:nth-child(7) { animation-delay: 2.3s; }
+        .slide2 .agenda-item:nth-child(8) { animation-delay: 2.6s; }
+        
+        /* SLIDE 3: HUMOROUS INTRO */
+        .slide3 .humor-slide-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+            padding: 60px;
+            position: relative;
+        }
+        
+        .slide3 .humor-text {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .slide3 .humor-main:hover {
+            transform: scale(1.05);
+            color: #b967db;
+            text-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
+            transition: all 0.3s ease;
+        }
+        
+        .slide3 .humor-main {
+            font-size: 64px;
+            font-weight: 400;
+            color: white;
+            line-height: 1.2;
+            margin: 0;
+            max-width: 1000px;
+            opacity: 0;
+            transform: scale(0.1) rotateZ(-15deg);
+            animation: dramaticPop 2.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.8s forwards;
+        }
+        
+        .slide3 .slide-number-small {
+            position: absolute;
+            bottom: 60px;
+            right: 60px;
+            font-size: 48px;
+            color: rgba(255, 255, 255, 0.3);
+            font-weight: 300;
+            animation: fadeIn 2s ease-out 1s both;
+        }
+        
+        .slide3:hover .humor-main {
+            color: #8a2be2;
+            transition: color 0.5s ease;
+        }
+        
+        /* Common Slide Styles */
+        .slide-content {
+            display: flex;
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 60px 80px;
+            gap: 80px;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        .content-section {
+            flex: 1;
+        }
+        
+        .visual-section {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .main-title {
+            font-size: 72px;
+            font-weight: 700;
+            margin-bottom: 60px;
+            line-height: 1;
+            color: white;
+            animation: fadeInDown 1s ease-out forwards;
+        }
+        
+        .section-title {
+            font-size: 72px;
+            font-weight: 700;
+            margin-bottom: 60px;
+            line-height: 1;
+            color: #8a2be2;
+            animation: slideInLeft 1s ease-out;
+        }
+        
+        .subtitle {
+            font-size: 24px;
+            font-weight: 400;
+            margin-bottom: 40px;
+            color: #8a2be2;
+            line-height: 1.4;
+            animation: slideInLeft 0.8s ease-out forwards;
+        }
+        
+        .bullet-points {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .bullet-points li {
+            font-size: 20px;
+            margin-bottom: 25px;
+            position: relative;
+            padding-left: 35px;
+            line-height: 1.5;
+            color: #cccccc;
+            transition: all 0.3s ease;
+            animation: slideInUp 0.8s ease-out forwards;
+            cursor: pointer;
+        }
+        
+        .bullet-points li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: #8a2be2;
+            font-weight: bold;
+            font-size: 20px;
+        }
+        
+        .bullet-points li:hover {
+            color: white;
+            transform: translateX(10px);
+            padding-left: 45px;
+        }
+        
+        /* Image Placeholder */
+        .image-placeholder {
+            width: 350px;
+            height: 400px;
+            background: rgba(138, 43, 226, 0.1);
+            border: 2px dashed #8a2be2;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            animation: fadeIn 1s ease-out forwards;
+            cursor: pointer;
+        }
+        
+        .image-placeholder:hover {
+            background: rgba(138, 43, 226, 0.2);
+            border-color: #b967db;
+            transform: scale(1.05);
+        }
+        
+        .image-placeholder-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: float 2s ease-in-out infinite;
+        }
+        
+        .image-placeholder-text {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            line-height: 1.4;
+        }
+
+        .slide4 .image-placeholder {
+            width: 400px;
+            height: 440px;
+            padding: 14px;
+            box-sizing: border-box;
+            cursor: default;
+        }
+
+        .slide4 .image-placeholder:hover {
+            transform: none;
+            background: rgba(138, 43, 226, 0.12);
+            border-color: #8a2be2;
+        }
+
+        .slide4 .slide4-diagram-img {
+            width: 100%;
+            height: 412px;
+            max-height: 412px;
+            object-fit: contain;
+            object-position: center;
+            display: block;
+            border-radius: 12px;
+        }
+
+        /* SLIDE 5: IMPORTANCE & CHARACTERISTICS */
+        .slide5 .slide-content {
+            padding: 120px 80px 60px 80px;
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 50px;
+        }
+
+        .slide5 .main-title {
+            font-size: 48px;
+            color: #8a2be2;
+            margin-bottom: 0;
+            font-weight: 700;
+            text-align: center;
+            animation: fadeInDown 1s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide5 .content-wrapper {
+            display: flex;
+            gap: 180px;
+            flex: 1;
+            align-items: stretch;
+        }
+
+        .slide5 .content-section {
+            flex: 1.8;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .slide5 .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+        }
+
+        .slide5 .column {
+            animation: slideInLeft 0.8s ease-out forwards;
+            opacity: 0;
+            padding: 25px;
+            border-radius: 15px;
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.08), rgba(185, 103, 219, 0.05));
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .slide5 .column:nth-child(1) { animation-delay: 0.3s; }
+        .slide5 .column:nth-child(2) { animation-delay: 0.5s; }
+
+        .slide5 .column:hover {
+            background: linear-gradient(135deg, rgba(138, 43, 226, 0.12), rgba(185, 103, 219, 0.08));
+            border: 1px solid rgba(138, 43, 226, 0.3);
+            transform: translateY(-3px);
+        }
+
+        .slide5 .section-title {
+            font-size: 32px;
+            color: #8a2be2;
+            margin-bottom: 25px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #8a2be2;
+            padding-bottom: 8px;
+        }
+
+        .slide5 .simple-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .slide5 .simple-list li {
+            font-size: 22px;
+            color: white;
+            margin-bottom: 18px;
+            padding-left: 30px;
+            position: relative;
+            line-height: 1.4;
+            transition: color 0.3s ease;
+        }
+
+        .slide5 .simple-list li:hover {
+            color: #b967db;
+        }
+
+        .slide5 .simple-list li:before {
+            content: '▶';
+            color: #8a2be2;
+            font-size: 16px;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+            top: 3px;
+        }
+
+        .slide5 .visual-section {
+            flex: 3.5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide5 .slide5-image {
+            max-width: 100%;
+            animation: fadeIn 1s ease-out 0.8s forwards;
+            opacity: 0;
+        }
+
+        .slide5 .slide5-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(138, 43, 226, 0.4);
+            transition: transform 0.3s ease;
+        }
+
+        .slide5 .slide5-image:hover img {
+            transform: scale(1.02);
+        }
+
+        /* SLIDE 6: WHY TESTS REALLY FAIL */
+        .slide6 .slide-content {
+            padding: 120px 80px 60px 80px;
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            gap: 60px;
+        }
+
+        .slide6 .content-section {
+            flex: 1.8;
+        }
+
+        .slide6 .main-title {
+            font-size: 64px;
+            color: #8a2be2;
+            margin-bottom: 40px;
+            font-weight: 700;
+            animation: fadeInDown 1s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide6 .content-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 40px 0;
+        }
+
+        .slide6 .content-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: rgba(138, 43, 226, 0.1);
+            border-radius: 10px;
+            animation: slideInLeft 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide6 .content-item:nth-child(1) { animation-delay: 0.3s; }
+        .slide6 .content-item:nth-child(2) { animation-delay: 0.5s; }
+        .slide6 .content-item:nth-child(3) { animation-delay: 0.7s; }
+
+        .slide6 .content-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+
+        .slide6 .content-text {
+            font-size: 20px;
+            font-weight: 500;
+            color: white;
+        }
+
+        .slide6 .quote-section {
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+            border-radius: 15px;
+            padding: 30px;
+            animation: fadeInUp 1s ease-out 0.8s forwards;
+            opacity: 0;
+        }
+
+        .slide6 .quote-text {
+            font-size: 22px;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .slide6 .visual-section {
+            flex: 1.2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide6 .slide6-image {
+            max-width: 100%;
+            animation: fadeIn 1s ease-out 0.5s forwards;
+            opacity: 0;
+        }
+
+        .slide6 .slide6-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(138, 43, 226, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .slide6 .slide6-image:hover img {
+            transform: scale(1.02);
+        }
+
+        /* SLIDE 7: AAA STRUCTURE */
+        .slide7 .slide-content {
+            padding: 120px 80px 60px 80px;
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide7 .content-section {
+            text-align: center;
+            max-width: 1000px;
+        }
+
+        .slide7 .main-title {
+            font-size: 64px;
+            color: #8a2be2;
+            margin-bottom: 20px;
+            font-weight: 700;
+            animation: fadeIn 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide7 .aaa-subtitle {
+            font-size: 48px;
+            color: white;
+            margin-bottom: 50px;
+            font-weight: 600;
+            animation: fadeIn 0.8s ease-out 0.25s forwards;
+            opacity: 0;
+        }
+
+        .slide7 .aaa-container {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            align-items: stretch;
+        }
+
+        .slide7 .aaa-step {
+            flex: 1;
+            background: rgba(138, 43, 226, 0.1);
+            border-radius: 20px;
+            padding: 40px 30px;
+            text-align: center;
+            border: 2px solid #8a2be2;
+            animation: fadeIn 0.75s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide7 .aaa-step:nth-child(1) { animation-delay: 0.5s; }
+        .slide7 .aaa-step:nth-child(2) { animation-delay: 0.9s; }
+        .slide7 .aaa-step:nth-child(3) { animation-delay: 1.3s; }
+
+        .slide7 .step-number {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            margin: 0 auto 20px auto;
+        }
+
+        .slide7 .step-title {
+            font-size: 24px;
+            color: #8a2be2;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .slide7 .step-description {
+            font-size: 16px;
+            color: white;
+            line-height: 1.5;
+        }
+
+        /* SLIDE 8: TDD IN ACTION */
+        .slide8 .slide-content {
+            padding: 120px 80px 60px 80px;
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            gap: 60px;
+        }
+
+        .slide8 .content-section {
+            flex: 2;
+        }
+
+        .slide8 .main-title {
+            font-size: 64px;
+            color: #8a2be2;
+            margin-bottom: 40px;
+            font-weight: 700;
+            animation: fadeInDown 1s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide8 .tdd-steps {
+            margin-bottom: 40px;
+        }
+
+        .slide8 .tdd-step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: rgba(138, 43, 226, 0.1);
+            border-radius: 15px;
+            animation: slideInLeft 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide8 .tdd-step:nth-child(1) { animation-delay: 0.3s; }
+        .slide8 .tdd-step:nth-child(3) { animation-delay: 0.6s; }
+        .slide8 .tdd-step:nth-child(5) { animation-delay: 0.9s; }
+
+        .slide8 .step-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 600;
+            color: white;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+
+        .slide8 .step-text {
+            font-size: 20px;
+            color: white;
+            font-weight: 500;
+        }
+
+        .slide8 .step-arrow {
+            text-align: center;
+            font-size: 32px;
+            color: #8a2be2;
+            margin: 15px 0;
+            animation: fadeIn 0.5s ease-out 1.2s forwards;
+            opacity: 0;
+        }
+
+        .slide8 .quote-section {
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+            border-radius: 15px;
+            padding: 30px;
+            animation: fadeInUp 1s ease-out 1.5s forwards;
+            opacity: 0;
+        }
+
+        .slide8 .quote-text {
+            font-size: 20px;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .slide8 .visual-section {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide8 .slide8-image {
+            max-width: 100%;
+            animation: fadeIn 1s ease-out 0.5s forwards;
+            opacity: 0;
+        }
+
+        .slide8 .slide8-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(138, 43, 226, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .slide8 .slide8-image:hover img {
+            transform: scale(1.02);
+        }
+
+        /* SLIDE 9: TESTING IN ISOLATION */
+        .slide9 .slide-content {
+            padding: 120px 80px 60px 80px;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .slide9 .content-section {
+            width: 100%;
+        }
+
+        .slide9 .main-title {
+            font-size: 56px;
+            color: #8a2be2;
+            margin-bottom: 40px;
+            font-weight: 700;
+            text-align: center;
+            animation: fadeInDown 1s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide9 .isolation-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .slide9 .isolation-section {
+            background: rgba(138, 43, 226, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            animation: slideInUp 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide9 .isolation-section:nth-child(1) { animation-delay: 0.3s; }
+        .slide9 .isolation-section:nth-child(2) { animation-delay: 0.6s; }
+        .slide9 .isolation-section:nth-child(3) { animation-delay: 0.9s; }
+
+        .slide9 .section-title {
+            font-size: 24px;
+            color: #8a2be2;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .slide9 .content-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .slide9 .content-item {
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: white;
+            line-height: 1.4;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .slide9 .content-item:before {
+            content: '•';
+            color: #8a2be2;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .slide9 .goal-note {
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            color: white;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+        }
+
+        .slide9 .emoji {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .slide9 .tools-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .slide9 .tool-item {
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .slide9 .isolation-quote {
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            animation: fadeInUp 1s ease-out 1.2s forwards;
+            opacity: 0;
+        }
+
+        .slide9 .quote-text {
+            font-size: 24px;
+            color: white;
+            font-weight: 600;
+            font-style: italic;
+        }
+
+        /* SLIDE 10: MOCKS AND STUBS */
+        .slide10 .slide-content {
+            padding: 120px 80px 60px 80px;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .slide10 .content-section {
+            width: 100%;
+        }
+
+        .slide10 .main-title {
+            font-size: 64px;
+            color: #8a2be2;
+            margin-bottom: 50px;
+            font-weight: 700;
+            text-align: center;
+            animation: fadeInDown 1s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide10 .comparison-table {
+            background: rgba(138, 43, 226, 0.1);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 40px;
+            animation: slideInUp 0.8s ease-out 0.5s forwards;
+            opacity: 0;
+        }
+
+        .slide10 .table-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .slide10 .table-header {
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+        }
+
+        .slide10 .table-header .table-cell {
+            color: white;
+            font-weight: 700;
+            font-size: 22px;
+        }
+
+        .slide10 .table-cell {
+            padding: 20px;
+            border-right: 1px solid rgba(138, 43, 226, 0.3);
+            color: white;
+            font-size: 18px;
+            line-height: 1.4;
+        }
+
+        .slide10 .table-cell:last-child {
+            border-right: none;
+        }
+
+        .slide10 .table-label {
+            font-weight: 600;
+            color: #8a2be2;
+        }
+
+        .slide10 .comparison-rules {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            animation: fadeInUp 1s ease-out 1s forwards;
+            opacity: 0;
+        }
+
+        .slide10 .rule-text {
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+            color: white;
+            padding: 25px 40px;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        /* SLIDE 11: STUBS */
+        .slide11 .main-title {
+            font-size: 64px;
+            color: #8a2be2;
+            margin: 0;
+            padding: 120px 60px 20px 60px;
+            font-weight: 700;
+            text-align: center;
+            animation: fadeInDown 1s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide11 .slide-content {
+            padding: 0 60px 40px 60px;
+            height: calc(100vh - 154px);
+            box-sizing: border-box;
+            display: flex;
+            gap: 40px;
+        }
+
+        .slide11 .content-section {
+            flex: 1.2;
+        }
+
+        .slide11 .code-section {
+            flex: 1;
+        }
+
+        .slide11 .subtitle {
+            font-size: 22px;
+            color: white;
+            margin-bottom: 25px;
+            line-height: 1.4;
+            animation: fadeInUp 1s ease-out 0.3s forwards;
+            opacity: 0;
+        }
+
+        .slide11 .mistakes-title {
+            font-size: 32px;
+            color: #8a2be2;
+            margin-bottom: 18px;
+            font-weight: 600;
+            animation: slideInLeft 0.8s ease-out 0.5s forwards;
+            opacity: 0;
+        }
+
+        .slide11 .mistakes-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .slide11 .mistake-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 18px 20px;
+            background: rgba(138, 43, 226, 0.1);
+            border-radius: 12px;
+            font-size: 20px;
+            color: white;
+            animation: slideInLeft 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide11 .mistake-item:nth-child(1) { animation-delay: 0.7s; }
+        .slide11 .mistake-item:nth-child(2) { animation-delay: 0.9s; }
+        .slide11 .mistake-item:nth-child(3) { animation-delay: 1.1s; }
+
+        .slide11 .mistake-icon {
+            font-size: 26px;
+            margin-right: 15px;
+        }
+
+        .slide11 .code-example {
+            animation: slideInRight 1s ease-out 1.3s forwards;
+            opacity: 0;
+        }
+
+        .slide11 .code-title {
+            font-size: 26px;
+            color: #8a2be2;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .slide11 .code-block {
+            background: #1e1e1e;
+            border: 2px solid rgba(138, 43, 226, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            line-height: 1.4;
+            color: #f8f8f2;
+            overflow-x: auto;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            height: fit-content;
+        }
+
+        /* SLIDE 12: MOCKS */
+        .slide12 .main-title {
+            font-size: 64px;
+            color: #8a2be2;
+            margin: 0;
+            padding: 120px 60px 20px 60px;
+            font-weight: 700;
+            text-align: center;
+            animation: fadeInDown 1s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide12 .slide-content {
+            padding: 0 60px 40px 60px;
+            height: calc(100vh - 154px);
+            box-sizing: border-box;
+            display: flex;
+            gap: 40px;
+        }
+
+        .slide12 .content-section {
+            flex: 1.2;
+        }
+
+        .slide12 .code-section {
+            flex: 1;
+        }
+
+        .slide12 .subtitle {
+            font-size: 22px;
+            color: white;
+            margin-bottom: 25px;
+            line-height: 1.4;
+            animation: fadeInUp 1s ease-out 0.3s forwards;
+            opacity: 0;
+        }
+
+        .slide12 .mistakes-title {
+            font-size: 32px;
+            color: #8a2be2;
+            margin-bottom: 18px;
+            font-weight: 600;
+            animation: slideInLeft 0.8s ease-out 0.5s forwards;
+            opacity: 0;
+        }
+
+        .slide12 .mistakes-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .slide12 .mistake-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 18px 20px;
+            background: rgba(138, 43, 226, 0.1);
+            border-radius: 12px;
+            font-size: 20px;
+            color: white;
+            animation: slideInLeft 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide12 .mistake-item:nth-child(1) { animation-delay: 0.7s; }
+        .slide12 .mistake-item:nth-child(2) { animation-delay: 0.9s; }
+
+        .slide12 .mistake-icon {
+            font-size: 26px;
+            margin-right: 15px;
+        }
+
+        .slide12 .code-example {
+            animation: slideInRight 1s ease-out 1.1s forwards;
+            opacity: 0;
+        }
+
+        .slide12 .code-title {
+            font-size: 26px;
+            color: #8a2be2;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .slide12 .code-block {
+            background: #1e1e1e;
+            border: 2px solid rgba(138, 43, 226, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            line-height: 1.4;
+            color: #f8f8f2;
+            overflow-x: auto;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            height: fit-content;
+        }
+
+        /* SLIDE 13: TESTING ASYNC CODE */
+        .slide13 .slide-content {
+            padding: 120px 56px 48px 56px;
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            gap: 40px;
+            align-items: stretch;
+        }
+
+        .slide13 .content-section {
+            flex: 0 1 34%;
+            min-width: 0;
+            max-width: 480px;
+        }
+
+        .slide13 .main-title {
+            font-size: clamp(36px, 3.2vw, 56px);
+            color: #8a2be2;
+            margin-bottom: 28px;
+            font-weight: 700;
+            animation: fadeInDown 1s ease-out forwards;
+            opacity: 0;
+            line-height: 1.1;
+        }
+
+        .slide13 .mistakes-title {
+            font-size: clamp(20px, 1.5vw, 26px);
+            color: #8a2be2;
+            margin-bottom: 30px;
+            font-weight: 600;
+            animation: slideInLeft 0.8s ease-out 0.3s forwards;
+            opacity: 0;
+        }
+
+        .slide13 .mistakes-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 40px 0;
+        }
+
+        .slide13 .mistake-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 14px 16px;
+            background: rgba(138, 43, 226, 0.1);
+            border-radius: 12px;
+            font-size: clamp(14px, 1.1vw, 17px);
+            color: white;
+            animation: slideInLeft 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide13 .mistake-item:nth-child(1) { animation-delay: 0.5s; }
+        .slide13 .mistake-item:nth-child(2) { animation-delay: 0.7s; }
+        .slide13 .mistake-item:nth-child(3) { animation-delay: 0.9s; }
+        .slide13 .mistake-item:nth-child(4) { animation-delay: 1.1s; }
+        .slide13 .mistake-item:nth-child(5) { animation-delay: 1.3s; }
+
+        .slide13 .mistake-icon {
+            font-size: 24px;
+            margin-right: 15px;
+        }
+
+        .slide13 .async-warning {
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+            border-radius: 15px;
+            padding: 25px;
+            color: white;
+            font-size: 22px;
+            font-weight: 600;
+            text-align: center;
+            animation: fadeInUp 1s ease-out 1.5s forwards;
+            opacity: 0;
+        }
+
+        .slide13 .visual-section {
+            flex: 1 1 66%;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide13 .slide13-image {
+            width: 100%;
+            max-width: min(100%, 1200px);
+            height: 100%;
+            max-height: calc(100vh - 150px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 1s ease-out 0.5s forwards;
+            opacity: 0;
+        }
+
+        .slide13 .slide13-image img {
+            width: 100%;
+            height: auto;
+            max-height: calc(100vh - 150px);
+            object-fit: contain;
+            border-radius: 15px;
+            box-shadow: 0 24px 56px rgba(138, 43, 226, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06);
+            transition: transform 0.3s ease;
+        }
+
+        .slide13 .slide13-image:hover img {
+            transform: scale(1.02);
+        }
+
+        /* SLIDE 14: COMMON TESTING MISTAKES (matches dark deck + uniform meme frames) */
+        .slide14 .slide-content {
+            padding: 120px 48px 56px 48px;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .slide14 .content-section {
+            width: 100%;
+            max-width: 1500px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .slide14 .main-title {
+            font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: clamp(28px, 2.8vw, 48px);
+            color: #8a2be2;
+            margin-bottom: 44px;
+            font-weight: 700;
+            line-height: 1.15;
+            animation: fadeInDown 1s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide14 .mistakes-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: clamp(16px, 2.2vw, 36px);
+            align-items: stretch;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .slide14 .mistake-card {
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+            border-radius: 20px;
+            padding: 22px 14px 26px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 12px 40px rgba(138, 43, 226, 0.25);
+            animation: slideInUpSlide14 0.85s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide14 .mistake-card:nth-child(1) { animation-delay: 0.25s; }
+        .slide14 .mistake-card:nth-child(2) { animation-delay: 0.5s; }
+        .slide14 .mistake-card:nth-child(3) { animation-delay: 0.75s; }
+
+        /* Identical frame for every meme: same width (column) × same height (vw/vh clamp) */
+        .slide14 .mistake-meme {
+            width: 100%;
+            height: min(28vw, 36vh, 360px);
+            min-height: min(28vw, 36vh, 360px);
+            max-height: min(28vw, 36vh, 360px);
+            position: relative;
+            border-radius: 14px;
+            background: rgba(0, 0, 0, 0.28);
+            overflow: hidden;
+            flex-shrink: 0;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+        }
+
+        .slide14 .mistake-meme img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
+            border-radius: 10px;
+            display: block;
+        }
+
+        .slide14 .mistake-caption {
+            font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: clamp(14px, 1.15vw, 18px);
+            font-weight: 600;
+            line-height: 1.4;
+            color: rgba(255, 255, 255, 0.96);
+            max-width: 22em;
+            margin: 0 auto;
+        }
+
+        /* SLIDE 15: THANK YOU */
+        .slide15 .thank-you-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 120px 80px 60px 80px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .slide15 .thank-you-main {
+            margin-bottom: 80px;
+        }
+
+        .slide15 .thank-you-title {
+            font-size: 96px;
+            color: #8a2be2;
+            margin-bottom: 40px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #8a2be2, #b967db);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: zoomInRotate 1.2s ease-out forwards;
+            opacity: 0;
+        }
+
+        .slide15 .thank-you-quote {
+            font-size: 32px;
+            color: white;
+            line-height: 1.4;
+            max-width: 900px;
+            margin: 0 auto;
+            font-weight: 400;
+            font-style: italic;
+            animation: fadeInUp 1s ease-out 0.8s forwards;
+            opacity: 0;
+        }
+
+        .slide15 .thank-you-footer {
+            animation: slideInUp 1s ease-out 1.5s forwards;
+            opacity: 0;
+        }
+
+        .slide15 .questions-text {
+            font-size: 24px;
+            color: #8a2be2;
+            font-weight: 600;
+            margin: 0;
+            padding: 20px 40px;
+            border: 2px solid rgba(138, 43, 226, 0.3);
+            border-radius: 50px;
+            background: rgba(138, 43, 226, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Animation Keyframes */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 0.95;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInUpSlide14 {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes zoomInRotate {
+            from {
+                opacity: 0;
+                transform: scale(0.3) rotate(-180deg);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        /* Animation Delays */
+        .slide1 .presentation-title { opacity: 0; animation-delay: 0.5s; animation-fill-mode: both; }
+        .slide1 .presentation-subtitle { opacity: 0; animation-delay: 1s; animation-fill-mode: both; }
+        .slide1 .presenter-name { opacity: 0; animation-delay: 1.5s; animation-fill-mode: both; }
+        .slide1 .presentation-date { opacity: 0; animation-delay: 1.7s; animation-fill-mode: both; }
+        .slide1 .slide-image { opacity: 0; animation-delay: 2s; animation-fill-mode: both; }
+        
+        .slide1 .slide-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 15px;
+            transition: transform 0.3s ease;
+        }
+        
+        .slide1 .slide-image:hover img {
+            transform: scale(1.05);
+        }
+        
+        .slide2 .main-title { 
+            opacity: 0; 
+            animation: fadeInDown 1s ease-out 0.2s forwards;
+        }
+        
+        .slide3 .humor-main { opacity: 0; animation-delay: 0.5s; animation-fill-mode: both; }
+        .slide3 .slide-number-small { opacity: 0; animation-delay: 1.5s; animation-fill-mode: both; }
+        
+        /* Slides 4+ will follow same pattern */
+        .slide .main-title { opacity: 0; animation-delay: 0.1s; animation-fill-mode: both; }
+        .slide .subtitle { opacity: 0; animation-delay: 0.3s; animation-fill-mode: both; }
+        .slide .bullet-points li { opacity: 0; animation-fill-mode: both; }
+        .slide .bullet-points li:nth-child(1) { animation-delay: 0.5s; }
+        .slide .bullet-points li:nth-child(2) { animation-delay: 0.7s; }
+        .slide .bullet-points li:nth-child(3) { animation-delay: 0.9s; }
+        .slide .image-placeholder { opacity: 0; animation-delay: 1.1s; animation-fill-mode: both; }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-controls {
+                bottom: 20px;
+                right: 20px;
+            }
+            
+            .slide-counter {
+                bottom: 20px;
+                left: 20px;
+            }
+            
+            .slide-content {
+                flex-direction: column;
+                padding: 40px;
+                gap: 40px;
+            }
+            
+            .main-title, .section-title {
+                font-size: 48px;
+            }
+            
+            .slide2 .accent-section {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <div class="slides-wrapper" id="slidesWrapper">
+            
+            <!-- SLIDE 1: TITLE SLIDE -->
+            <div class="slide slide1 is-active">
+                <div class="contentstack-logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Contentstack</span>
+                </div>
+                
+                <div class="floating-particles">
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                </div>
+                
+                <div class="title-slide-content">
+                    <div class="title-main">
+                        <h1 class="presentation-title">Unit Testing</h1>
+                        <h2 class="presentation-subtitle">Best Practices for Quality Code</h2>
+                    </div>
+                    
+                    <div class="title-meta">
+                        <div class="presenter-info">
+                            <p class="presenter-name">Presented By: Chhavi Mandowara</p>
+                        </div>
+                    </div>
+                    
+                    <div class="title-decorations">
+                        <div class="slide-image">
+                            <img src="slide1.png" alt="Unit Testing Slide 1" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SLIDE 2: AGENDA -->
+            <div class="slide slide2">
+                <div class="contentstack-logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Contentstack</span>
+                </div>
+                
+                <div class="floating-particles">
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                </div>
+                
+                <div class="slide-content">
+                    <h1 class="main-title">Agenda</h1>
+                    
+                    <ul class="agenda-list">
+                        <li class="agenda-item">Quick Refresh</li>
+                        <li class="agenda-item">Test Structure Made Simple</li>
+                        <li class="agenda-item">Why Tests Fail</li>
+                        <li class="agenda-item">TDD in Action</li>
+                        <li class="agenda-item">How Testing Frameworks Help Us</li>
+                        <li class="agenda-item">Mocks vs Stubs</li>
+                        <li class="agenda-item">Async Testing Pitfalls</li>
+                        <li class="agenda-item">AI-Written Tests: Friend or Frenemy?</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- SLIDE 3: HUMOROUS INTRO -->
+            <div class="slide slide3">
+                <div class="contentstack-logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Contentstack</span>
+                </div>
+                
+                <div class="floating-particles">
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                </div>
+                
+                <div class="humor-slide-content">
+                    <div class="humor-text">
+                        <h1 class="humor-main">I wrote code without tests once. Once!</h1>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SLIDE 4: WHAT IS UNIT TESTING -->
+            <div class="slide slide4">
+                <div class="contentstack-logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Contentstack</span>
+                </div>
+                
+                <div class="floating-particles">
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                </div>
+                
+                <div class="slide-content">
+                    <div class="content-section">
+                        <h1 class="main-title">What is Unit Testing?</h1>
+                        <p class="subtitle">A unit test is a piece of code that:</p>
+                        
+                        <ul class="bullet-points">
+                            <li>Tests a smallest testable part of your application (a "unit")</li>
+                            <li>Runs automatically</li>
+                            <li>Verifies that the unit behaves exactly as expected</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="visual-section">
+                        <div class="image-placeholder">
+                            <img class="slide4-diagram-img" src="slide4_unit_testing_visual.png" width="372" height="412" alt="Concept art: magnifying glass over a circuit-board chip labeled Unit Test, with a monitor showing a green checkmark and Pass" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SLIDE 5: IMPORTANCE & CHARACTERISTICS -->
+            <div class="slide slide5">
+                <div class="contentstack-logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Contentstack</span>
+                </div>
+                
+                <div class="floating-particles">
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                </div>
+                
+                <div class="slide-content">
+                    <h1 class="main-title">Importance & Characteristics</h1>
+                    
+                    <div class="content-wrapper">
+                        <div class="content-section">
+                            <div class="column">
+                                <h2 class="section-title">Importance</h2>
+                                <ul class="simple-list">
+                                    <li>Faster Feedback</li>
+                                    <li>Refactoring Confidence</li>
+                                    <li>Living Documentation</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="column">
+                                <h2 class="section-title">Characteristics</h2>
+                                <ul class="simple-list">
+                                    <li>Fast</li>
+                                    <li>Reliable (Deterministic)</li>
+                                    <li>Readable</li>
+                                    <li>Isolated</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="visual-section">
+                            <div class="slide5-image">
+                                <img src="slide5.jpg" alt="Unit Testing Importance and Characteristics" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SLIDE 6: WHY TESTS REALLY FAIL -->
+            <div class="slide slide6">
+                <div class="contentstack-logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Contentstack</span>
+                </div>
+                
+                <div class="floating-particles">
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                </div>
+                
+                <div class="slide-content">
+                    <div class="content-section">
+                        <h1 class="main-title">Why Tests Really Fail</h1>
+                        
+                        <ul class="content-list">
+                            <li class="content-item">
+                                <span class="content-number">01</span>
+                                <span class="content-text">It's Not the Test — It's the Code</span>
+                            </li>
+                            <li class="content-item">
+                                <span class="content-number">02</span>
+                                <span class="content-text">Poor design</span>
+                            </li>
+                            <li class="content-item">
+                                <span class="content-number">03</span>
+                                <span class="content-text">Tight coupling</span>
+                            </li>
+                        </ul>
+                        
+                        <div class="quote-section">
+                            <div class="quote-text">
+                                "Fastest teams don't write less tests — they write better tests."
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="visual-section">
+                        <div class="slide6-image">
+                            <img src="slide6.png" alt="Why Tests Really Fail" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SLIDE 7: AAA STRUCTURE -->
+            <div class="slide slide7">
+                <div class="contentstack-logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Contentstack</span>
+                </div>
+                
+                <div class="floating-particles">
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                </div>
+                
+                <div class="slide-content">
+                    <div class="content-section">
+                        <h1 class="main-title">Structure of Unit TeST</h1>
+                        <h2 class="aaa-subtitle">AAA</h2>
+                        
+                        <div class="aaa-container">
+                            <div class="aaa-step">
+                                <div class="step-number">1</div>
+                                <h3 class="step-title">ARRANGE</h3>
+                                <p class="step-description">
+                                    Set up the data, mocks, and conditions needed for the test.
+                                </p>
+                            </div>
+                            
+                            <div class="aaa-step">
+                                <div class="step-number">2</div>
+                                <h3 class="step-title">ACT</h3>
+                                <p class="step-description">
+                                    Execute the function or method being tested.
+                                </p>
+                            </div>
+                            
+                            <div class="aaa-step">
+                                <div class="step-number">3</div>
+                                <h3 class="step-title">ASSERT</h3>
+                                <p class="step-description">
+                                    Verify the result is what you expected.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SLIDE 8: TDD IN ACTION -->
+            <div class="slide slide8">
+                <div class="contentstack-logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Contentstack</span>
+                </div>
+                
+                <div class="floating-particles">
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                </div>
+                
+                <div class="slide-content">
+                    <div class="content-section">
+                        <h1 class="main-title">TDD In Action</h1>
+                        
+                        <div class="tdd-steps">
+                            <div class="tdd-step">
+                                <div class="step-number">1</div>
+                                <span class="step-text">Write a failing test (Red)</span>
+                            </div>
+                            <div class="step-arrow">↓</div>
+                            
+                            <div class="tdd-step">
+                                <div class="step-number">2</div>
+                                <span class="step-text">Make the test pass (Green)</span>
+                            </div>
+                            <div class="step-arrow">↓</div>
+                            
+                            <div class="tdd-step">
+                                <div class="step-number">3</div>
+                                <span class="step-text">Refactor the code</span>
+                            </div>
+                        </div>
+                        
+                        <div class="quote-section">
+                            <div class="quote-text">
+                                "A test name should describe behavior, not implementation".
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="visual-section">
+                        <div class="slide8-image">
+                            <img src="slide8_tdd_cycle.png" alt="TDD Circle of Life - Red, Green, Refactor" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SLIDE 9: TESTING IN ISOLATION -->
+            <div class="slide slide9">
+                <div class="contentstack-logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Contentstack</span>
+                </div>
+                
+                <div class="floating-particles">
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                </div>
+                
+                <div class="slide-content">
+                    <div class="content-section">
+                        <h1 class="main-title">Testing in Isolation (Mocks, Stubs, Spies)</h1>
+                        
+                        <div class="isolation-grid">
+                            <div class="isolation-section">
+                                <h2 class="section-title">Why Isolation</h2>
+                                <ul class="content-list">
+                                    <li class="content-item">Real dependencies are slow, flaky, unpredictable</li>
+                                    <li class="content-item">APIs, DBs, Kafka → can fail or be unavailable</li>
+                                    <li class="content-item">Makes tests non-deterministic</li>
+                                </ul>
+                                <div class="goal-note">
+                                    <span class="emoji">👉</span>
+                                    <strong>Goal: Test logic, not the world</strong>
+                                </div>
+                            </div>
+                            
+                            <div class="isolation-section">
+                                <h2 class="section-title">How it Helps</h2>
+                                <ul class="content-list">
+                                    <li class="content-item">Faster tests (no real calls)</li>
+                                    <li class="content-item">Deterministic results (same input → same output)</li>
+                                    <li class="content-item">Easier debugging</li>
+                                    <li class="content-item">Test edge cases (failures, retries, timeouts)</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="isolation-section">
+                                <h2 class="section-title">Tools & Concepts</h2>
+                                <div class="tools-list">
+                                    <div class="tool-item">Mock: Fake implementation</div>
+                                    <div class="tool-item">Stub: Predefined response</div>
+                                    <div class="tool-item">Spy: Tracks calls</div>
+                                    <div class="tool-item">Jest: Built-in support for all above</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="isolation-quote">
+                            <div class="quote-text">
+                                "If your test depends on real services, it's not a unit test."
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SLIDE 10: MOCKS AND STUBS -->
+            <div class="slide slide10">
+                <div class="contentstack-logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Contentstack</span>
+                </div>
+                
+                <div class="floating-particles">
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                </div>
+                
+                <div class="slide-content">
+                    <div class="content-section">
+                        <h1 class="main-title">Mocks and Stubs</h1>
+                        
+                        <div class="comparison-table">
+                            <div class="table-row table-header">
+                                <div class="table-cell">CHARACTERISTICS</div>
+                                <div class="table-cell">MOCKS</div>
+                                <div class="table-cell">STUBS</div>
+                            </div>
+                            
+                            <div class="table-row">
+                                <div class="table-cell table-label">CHARACTERISTICS</div>
+                                <div class="table-cell">
+                                    • Break outgoing dependencies (indirect outputs or exit points)<br>
+                                    • Represents an exit point in a unit test
+                                </div>
+                                <div class="table-cell">
+                                    • Break incoming dependencies (indirect inputs)<br>
+                                    • Provide fake behavior or data into the code under test
+                                </div>
+                            </div>
+                            
+                            <div class="table-row">
+                                <div class="table-cell table-label">PURPOSE</div>
+                                <div class="table-cell">Verifies interactions (was method called?)</div>
+                                <div class="table-cell">Returns controlled data</div>
+                            </div>
+                            
+                            <div class="table-row">
+                                <div class="table-cell table-label">USE CASES</div>
+                                <div class="table-cell">
+                                    • You care about side effects<br>
+                                    • You care about collaboration
+                                </div>
+                                <div class="table-cell">
+                                    • You only care about return value<br>
+                                    • You care about output state
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="comparison-rules">
+                            <div class="rule-text">If you assert OUTPUT → it's a Stub</div>
+                            <div class="rule-text">If you assert CALLS → it's a Mock</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SLIDE 11: STUBS -->
+            <div class="slide slide11">
+                <div class="contentstack-logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Contentstack</span>
+                </div>
+                
+                <div class="floating-particles">
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                </div>
+                
+                <h1 class="main-title">Stubs</h1>
+                
+                <div class="slide-content">
+                    <div class="content-section">
+                        <p class="subtitle">You focus on stubbing return values, not verifying calls.</p>
+                        
+                        <h3 class="mistakes-title">Common Mistakes with Stubs</h3>
+                        <ul class="mistakes-list">
+                            <li class="mistake-item">
+                                <span class="mistake-icon">❌</span>
+                                Stubbing too much — tests become meaningless
+                            </li>
+                            <li class="mistake-item">
+                                <span class="mistake-icon">❌</span>
+                                Stubbing internal methods instead of dependencies
+                            </li>
+                            <li class="mistake-item">
+                                <span class="mistake-icon">❌</span>
+                                Creating complex stub logic
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="code-section">
+                        <div class="code-example">
+                            <h3 class="code-title">Example: Stub Implementation</h3>
+                            <pre class="code-block">
+<code>function sendNotification(emailService, user) {
+  const response = emailService.send(user.email);
+  return response === "OK";
+}
+
+test("returns true when email is sent", () => {
+  const emailStub = {
+    send: () => "OK" // fixed response
+  };
+  
+  const result = sendNotification(emailStub, { email: "test@test.com" });
+  
+  expect(result).toBe(true); // only checking result
+});</code>
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SLIDE 12: MOCKS -->
+            <div class="slide slide12">
+                <div class="contentstack-logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Contentstack</span>
+                </div>
+                
+                <div class="floating-particles">
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                </div>
+                
+                <h1 class="main-title">Mocks</h1>
+                
+                <div class="slide-content">
+                    <div class="content-section">
+                        <p class="subtitle">You test: Did this function call the right collaborator in the right way</p>
+                        
+                        <h3 class="mistakes-title">Common Mistakes with Mocks</h3>
+                        <ul class="mistakes-list">
+                            <li class="mistake-item">
+                                <span class="mistake-icon">❌</span>
+                                Over mocking — tests become meaningless
+                            </li>
+                            <li class="mistake-item">
+                                <span class="mistake-icon">❌</span>
+                                Testing implementation instead of behavior
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="code-section">
+                        <div class="code-example">
+                            <h3 class="code-title">Example: Mock Implementation</h3>
+                            <pre class="code-block">
+<code>function processOrder(paymentService, order) {
+  paymentService.charge(order.amount);
+}
+
+test("charges correct amount", () => {
+  const paymentMock = {
+    charge: jest.fn()
+  };
+  
+  processOrder(paymentMock, { amount: 100 });
+  
+  expect(paymentMock.charge).toHaveBeenCalledWith(100); // verifying interaction
+});</code>
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SLIDE 13: TESTING ASYNC CODE -->
+            <div class="slide slide13">
+                <div class="contentstack-logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Contentstack</span>
+                </div>
+                
+                <div class="floating-particles">
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                </div>
+                
+                <div class="slide-content">
+                    <div class="content-section">
+                        <h1 class="main-title">Testing Async Code</h1>
+                        
+                        <h3 class="mistakes-title">Common Mistakes with Async Tests:</h3>
+                        <ul class="mistakes-list">
+                            <li class="mistake-item">
+                                <span class="mistake-icon">❌</span>
+                                Forgetting to await
+                            </li>
+                            <li class="mistake-item">
+                                <span class="mistake-icon">❌</span>
+                                Not returning the promise
+                            </li>
+                            <li class="mistake-item">
+                                <span class="mistake-icon">❌</span>
+                                Mixing callbacks and promises incorrectly
+                            </li>
+                            <li class="mistake-item">
+                                <span class="mistake-icon">❌</span>
+                                Using real timers when fake timers are better
+                            </li>
+                            <li class="mistake-item">
+                                <span class="mistake-icon">❌</span>
+                                Not testing error paths
+                            </li>
+                        </ul>
+                        
+                        <div class="async-warning">
+                            If you don't control <strong>async flow</strong>, your tests will lie.
+                        </div>
+                    </div>
+                    
+                    <div class="visual-section">
+                        <div class="slide13-image">
+                            <img src="slide13.png" alt="Testing async code — patterns and cheat sheet" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SLIDE 14: COMMON TESTING MISTAKES -->
+            <div class="slide slide14">
+                <div class="contentstack-logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Contentstack</span>
+                </div>
+                
+                <div class="floating-particles">
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                </div>
+                
+                <div class="slide-content">
+                    <div class="content-section">
+                        <h1 class="main-title">COMMON TESTING MISTAKES (Now AI-Powered)</h1>
+                        
+                        <div class="mistakes-grid">
+                            <div class="mistake-card">
+                                <div class="mistake-meme">
+                                    <img src="slide14_1.jpeg" alt="Meme: your pipeline cannot fail if you have no tests" />
+                                </div>
+                                <div class="mistake-caption">
+                                    If code is hard to test, change the design, not the test.
+                                </div>
+                            </div>
+                            
+                            <div class="mistake-card">
+                                <div class="mistake-meme">
+                                    <img src="slide14.jpeg" alt="Meme: unit tests lengthen dev time — change my mind" />
+                                </div>
+                                <div class="mistake-caption">
+                                    Coverage is a signal, not a goal.
+                                </div>
+                            </div>
+                            
+                            <div class="mistake-card">
+                                <div class="mistake-meme">
+                                    <img src="slide14.webp" alt="Meme: Drake prefers unit tests for coverage over tests that actually test" />
+                                </div>
+                                <div class="mistake-caption">
+                                    The best test is the one that fails first.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- SLIDE 15: THANK YOU -->
+            <div class="slide slide15">
+                <div class="contentstack-logo">
+                    <div class="logo-icon"></div>
+                    <span class="logo-text">Contentstack</span>
+                </div>
+                
+                <div class="floating-particles">
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                    <div class="floating-particle"></div>
+                </div>
+                
+                <div class="thank-you-content">
+                    <div class="thank-you-main">
+                        <h1 class="thank-you-title">Thank You!</h1>
+                        <p class="thank-you-quote">"May your tests be fast, your mocks be honest, and your production bugs be rare." 🙏</p>
+                    </div>
+                    
+                    <div class="thank-you-footer">
+                        <p class="questions-text">Questions & Discussion</p>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Navigation Controls -->
+        <div class="nav-controls">
+            <button class="nav-btn" id="prevBtn" onclick="safePreviousSlide()">‹</button>
+            <button class="nav-btn" id="nextBtn" onclick="safeNextSlide()">›</button>
+        </div>
+        
+        <!-- Slide Counter -->
+        <div class="slide-counter">
+            <span id="currentSlide">1</span> / <span id="totalSlides">15</span>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+    
+    <script>
+        let currentSlideIndex = 0;
+        const totalSlides = 15;
+        const slidesWrapper = document.getElementById('slidesWrapper');
+        const slides = slidesWrapper.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const currentSlideSpan = document.getElementById('currentSlide');
+        const totalSlidesSpan = document.getElementById('totalSlides');
+        const progressBar = document.getElementById('progressBar');
+        
+        function updateSlidePosition() {
+            const translateX = -currentSlideIndex * 100;
+            slidesWrapper.style.transform = `translateX(${translateX}vw)`;
+
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('is-active', i === currentSlideIndex);
+            });
+            
+            // Update counter
+            currentSlideSpan.textContent = currentSlideIndex + 1;
+            if (totalSlidesSpan) {
+                totalSlidesSpan.textContent = String(totalSlides);
+            }
+            
+            // Update progress bar
+            const progress = ((currentSlideIndex + 1) / totalSlides) * 100;
+            progressBar.style.width = progress + '%';
+            
+            // Update button states
+            prevBtn.disabled = currentSlideIndex === 0;
+            nextBtn.disabled = currentSlideIndex === totalSlides - 1;
+        }
+        
+        function nextSlide() {
+            if (currentSlideIndex < totalSlides - 1) {
+                currentSlideIndex++;
+                updateSlidePosition();
+            }
+        }
+        
+        function previousSlide() {
+            if (currentSlideIndex > 0) {
+                currentSlideIndex--;
+                updateSlidePosition();
+            }
+        }
+        
+        function goToSlide(index) {
+            if (index >= 0 && index < totalSlides) {
+                currentSlideIndex = index;
+                updateSlidePosition();
+            }
+        }
+        
+        // Prevent accidental rapid clicking
+        let navigationLocked = false;
+        function safeNextSlide() {
+            if (navigationLocked) return;
+            navigationLocked = true;
+            nextSlide();
+            setTimeout(() => { navigationLocked = false; }, 300);
+        }
+        
+        function safePreviousSlide() {
+            if (navigationLocked) return;
+            navigationLocked = true;
+            previousSlide();
+            setTimeout(() => { navigationLocked = false; }, 300);
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', function(event) {
+            if (navigationLocked) return;
+            
+            switch(event.key) {
+                case 'ArrowRight':
+                case ' ':
+                    event.preventDefault();
+                    safeNextSlide();
+                    break;
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    safePreviousSlide();
+                    break;
+                case 'Home':
+                    event.preventDefault();
+                    goToSlide(0);
+                    break;
+                case 'End':
+                    event.preventDefault();
+                    goToSlide(totalSlides - 1);
+                    break;
+                case 'Escape':
+                    event.preventDefault();
+                    if (document.fullscreenElement) {
+                        document.exitFullscreen();
+                    } else {
+                        document.documentElement.requestFullscreen();
+                    }
+                    break;
+            }
+        });
+        
+        // Touch/swipe support for mobile
+        let startX = 0;
+        let endX = 0;
+        
+        document.addEventListener('touchstart', function(event) {
+            startX = event.touches[0].clientX;
+        });
+        
+        document.addEventListener('touchend', function(event) {
+            endX = event.changedTouches[0].clientX;
+            handleSwipe();
+        });
+        
+        function handleSwipe() {
+            if (navigationLocked) return;
+            
+            const swipeThreshold = 50;
+            const swipeLength = endX - startX;
+            
+            if (Math.abs(swipeLength) > swipeThreshold) {
+                if (swipeLength > 0) {
+                    safePreviousSlide();
+                } else {
+                    safeNextSlide();
+                }
+            }
+        }
+        
+        // Initialize - ensure we start at slide 0
+        currentSlideIndex = 0;
+        slidesWrapper.style.transform = 'translateX(0vw)';
+        updateSlidePosition();
+        
+        // Auto-hide cursor in fullscreen mode
+        let mouseTimer;
+        document.addEventListener('mousemove', function() {
+            document.body.style.cursor = 'default';
+            clearTimeout(mouseTimer);
+            mouseTimer = setTimeout(function() {
+                if (document.fullscreenElement) {
+                    document.body.style.cursor = 'none';
+                }
+            }, 3000);
+        });
+        
+        // Presentation mode indicator
+        document.addEventListener('fullscreenchange', function() {
+            if (document.fullscreenElement) {
+                document.body.classList.add('presentation-mode');
+            } else {
+                document.body.classList.remove('presentation-mode');
+                document.body.style.cursor = 'default';
+            }
+        });
+    </script>
+</body>
+</html>
