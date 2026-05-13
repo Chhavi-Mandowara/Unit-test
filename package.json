@@ -5,11 +5,12 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "test:bad": "jest tests/bad --verbose",
-    "test:good": "jest tests/good --verbose",
+    "test:bad": "jest --testNamePattern=\"@bad\" --verbose",
+    "test:good": "jest --testNamePattern=\"@good\" --verbose",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "demo": "echo 'Run npm run test:bad to see failing/brittle tests, then npm run test:good to see proper tests'"
+    "test:support": "jest --testPathPattern='(clock|logger|analytics-service|notification-service|todo-repository)\\.spec\\.js$' --verbose",
+    "demo": "echo 'Run npm run test:bad (@bad) vs npm run test:good (@good), then node demo-refactor.js'"
   },
   "keywords": ["unit-testing", "jest", "todo", "presentation", "art-of-unit-testing"],
   "author": "Demo Project",
@@ -19,6 +20,7 @@
   },
   "jest": {
     "testEnvironment": "node",
+    "testMatch": ["**/src/**/*.spec.js"],
     "collectCoverageFrom": [
       "src/**/*.js",
       "!src/**/*.spec.js",

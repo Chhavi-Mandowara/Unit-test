@@ -42,7 +42,6 @@ class TodoValidator {
   }
 
   static validateForUpdate(todo) {
-    // For updates, we're more lenient - only validate provided fields
     if (!todo) {
       return { isValid: false, errors: ['Todo object is required'] };
     }

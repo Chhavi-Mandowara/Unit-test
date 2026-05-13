@@ -10,7 +10,7 @@ A realistic JavaScript Todo application designed specifically for demonstrating 
 
 Perfect for live demonstrations where you can show both approaches side-by-side and prove that good tests survive refactoring while bad tests break.
 
-📋 **See `PRESENTATION_COMPARISON_GUIDE.md` for detailed presentation flow!**
+📋 **See `presentation-comparison-guide.md` for detailed presentation flow!**
 
 ## 🚀 Quick Start
 
@@ -21,11 +21,14 @@ npm install
 # Run all tests
 npm test
 
-# Run bad tests (see anti-patterns)
+# Run only **@bad** examples (Jest `--testNamePattern`)
 npm run test:bad
 
-# Run good tests (see best practices)  
+# Run only **@good** examples
 npm run test:good
+
+# Run only supporting modules (clock, logger, repository, notifications, analytics)
+npm run test:support
 
 # Interactive refactoring demo
 node demo-refactor.js
@@ -43,22 +46,39 @@ node demo-refactor.js
 - ✅ Comprehensive logging
 - ✅ Input validation
 
-### Services & Dependencies
-- **TodoService**: Main business logic orchestrator
-- **TodoRepository**: Data persistence (in-memory)
-- **NotificationService**: Email/reminder system
-- **AnalyticsService**: Event tracking
-- **Logger**: Application logging
-- **Clock**: Time provider (testable)
-- **TodoValidator**: Input validation
+### Services and modules (kebab-case files)
 
-## 🔥 Testing Anti-Patterns (Bad Examples)
+- **`todo-service.js`**: Main business logic orchestrator  
+- **`todo-repository.js`**: Data persistence (in-memory)  
+- **`notification-service.js`**: Email/reminder system  
+- **`analytics-service.js`**: Event tracking  
+- **`logger.js`**: Application logging  
+- **`clock.js`**: Time provider (testable)  
+- **`todo-validator.js`**: Input validation  
 
-**Located in `tests/bad/` - Each test has a matching GOOD version for the same scenario!**
+### Supporting modules (simple demo specs)
 
-These demonstrate common mistakes:
+Small co-located specs you can walk through before the main **@bad** / **@good** todo tests:
 
-### 1. **Over-Mocking**
+| File | What it shows |
+|------|----------------|
+| `src/utils/clock.spec.js` | Injectable time / non-determinism seam |
+| `src/services/logger.spec.js` | Prefer inspecting `getLogs()` over asserting console text |
+| `src/services/analytics-service.spec.js` | Stub logger, assert `track` outcomes |
+| `src/services/notification-service.spec.js` | Async + collaborator, outcome-focused |
+| `src/repositories/todo-repository.spec.js` | Async persistence, state after `await` |
+
+Run only these: `npm run test:support`
+
+### Co-located tests (**@bad** vs **@good**)
+
+- **`src/services/todo-service.spec.js`** and **`src/utils/todo-validator.spec.js`**: One **`describe` per feature** (e.g. `createTodo`). Inside each block you scroll **one `@bad` test** (over-specified / implementation-coupled), then **one `@good` test** for the same scenario, with **`// WHY THIS IS BAD`** / **`// WHY THIS IS GOOD`** comments under each title. Extra **`@good`**-only examples appear where there is no paired anti-pattern (e.g. edge cases).
+
+`npm run test:bad` runs tests whose full name matches **`@bad`**; `npm run test:good` matches **`@good`**.
+
+## Anti-patterns illustrated in **`@bad`** tests
+
+These demonstrate common mistakes (see the **`@bad`** `it(...)` blocks in `*.spec.js`):
 ```javascript
 // BAD: Mocking every dependency even when not needed
 expect(mockLogger.info).toHaveBeenCalledTimes(2);
@@ -95,11 +115,9 @@ mockRepository.findAll = jest.fn().mockResolvedValue(todos);
 expect(mockRepository.findAll).toHaveBeenCalledTimes(1); // Unnecessary verification
 ```
 
-## ✨ Best Practices (Good Examples)
+## ✨ Best practices (**`@good`** tests)
 
-**Located in `tests/good/` - Each test matches a BAD version for direct comparison!**
-
-These follow "The Art of Unit Testing" principles:
+The **`@good`** tests in the same spec files demonstrate habits from *The Art of Unit Testing*:
 
 ### 1. **Behavior-Focused Testing**
 ```javascript
@@ -151,8 +169,8 @@ node demo-refactor.js
 ### What the Demo Does:
 1. ✅ Runs all tests with original implementation (all pass)
 2. 🔧 Applies harmless refactoring (reorder internal calls, extract methods, add caching)
-3. 💥 Runs bad tests → **FAIL** (they test implementation details)
-4. ✨ Runs good tests → **PASS** (they test behavior)
+3. 💥 Runs **`npm run test:bad`** → **FAIL** (implementation-coupled assertions)
+4. ✨ Runs **`npm run test:good`** → **PASS** (behavior-focused)
 5. 🔄 Restores original implementation
 
 ### Refactoring Changes Made:
@@ -222,25 +240,28 @@ node demo-refactor.js
 ```
 ├── src/
 │   ├── services/
-│   │   ├── TodoService.js           # Main business logic
-│   │   ├── TodoService.refactored.js # Refactored version for demo
-│   │   ├── NotificationService.js    # Email/notifications
-│   │   ├── AnalyticsService.js      # Event tracking
-│   │   └── Logger.js                # Application logging
+│   │   ├── todo-service.js
+│   │   ├── todo-service.spec.js
+│   │   ├── todo-service.refactored.js
+│   │   ├── logger.js
+│   │   ├── logger.spec.js
+│   │   ├── notification-service.js
+│   │   ├── notification-service.spec.js
+│   │   ├── analytics-service.js
+│   │   ├── analytics-service.spec.js
+│   │   └── ...
 │   ├── repositories/
-│   │   └── TodoRepository.js        # Data persistence
+│   │   ├── todo-repository.js
+│   │   └── todo-repository.spec.js
 │   └── utils/
-│       ├── TodoValidator.js         # Input validation
-│       └── Clock.js                 # Time provider
-├── tests/
-│   ├── bad/                         # Anti-pattern examples
-│   │   ├── TodoService.bad.spec.js
-│   │   └── TodoValidator.bad.spec.js
-│   └── good/                        # Best practice examples
-│       ├── TodoService.good.spec.js
-│       └── TodoValidator.good.spec.js
-├── demo-refactor.js                 # Interactive demo script
-├── REFACTORING_DEMO.md             # Refactoring explanation
+│       ├── clock.js
+│       ├── clock.spec.js
+│       ├── todo-validator.js
+│       └── todo-validator.spec.js
+├── demo-refactor.js
+├── refactoring-demo.md
+├── presentation-comparison-guide.md
+├── presentation-notes.md
 └── package.json
 ```
 

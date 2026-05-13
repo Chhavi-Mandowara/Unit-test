@@ -1,8 +1,14 @@
-const TodoValidator = require('../utils/TodoValidator');
+const TodoValidator = require('../utils/todo-validator');
 
 /**
- * Main TodoService that orchestrates todo operations
- * This service demonstrates realistic dependencies for testing scenarios
+ * REFACTORED TodoService - This version shows harmless internal changes
+ * that will break bad tests but not affect good tests
+ * 
+ * Changes made:
+ * 1. Extracted validation to private method
+ * 2. Reordered analytics and notification calls
+ * 3. Changed logging order
+ * 4. Added internal caching (implementation detail)
  */
 class TodoService {
   constructor(todoRepository, notificationService, analyticsService, logger, clock) {
@@ -11,17 +17,16 @@ class TodoService {
     this.analyticsService = analyticsService;
     this.logger = logger;
     this.clock = clock;
+    // NEW: Added internal cache (implementation detail)
+    this.lastCreatedTodo = null;
   }
 
   async createTodo(todoData) {
-    this.logger.info('Creating new todo', { title: todoData.title });
+    // REFACTOR: Changed log message (will break exact string assertions)
+    this.logger.info('Starting todo creation process', { title: todoData.title });
 
-    // Validate input
-    const validation = TodoValidator.validate(todoData);
-    if (!validation.isValid) {
-      this.logger.error('Todo validation failed', null, { errors: validation.errors });
-      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
-    }
+    // REFACTOR: Extracted to private method (implementation change)
+    this._validateTodoData(todoData);
 
     try {
       // Create todo object
@@ -35,25 +40,44 @@ class TodoService {
       // Save to repository
       const savedTodo = await this.todoRepository.save(todo);
 
-      // Track analytics
+      // REFACTOR: Do analytics BEFORE notification (reordered operations)
       this.analyticsService.track('todo_created', {
         todoId: savedTodo.id,
         priority: savedTodo.priority || 'medium',
         hasDueDate: !!savedTodo.dueDate
       });
 
-      // Send notification if due date is set
+      // Send notification if due date is set (moved after analytics)
       if (savedTodo.dueDate && savedTodo.userEmail) {
         await this._scheduleReminder(savedTodo);
       }
 
-      this.logger.info('Todo created successfully', { todoId: savedTodo.id });
+      // NEW: Cache the created todo (implementation detail)
+      this.lastCreatedTodo = { ...savedTodo };
+
+      // REFACTOR: Changed success log message (will break exact string assertions)
+      this.logger.info('Todo creation process completed', { todoId: savedTodo.id });
+      
       return savedTodo;
 
     } catch (error) {
       this.logger.error('Failed to create todo', error, { todoData });
       throw error;
     }
+  }
+
+  // REFACTOR: Extracted validation to private method (implementation change)
+  _validateTodoData(todoData) {
+    const validation = TodoValidator.validate(todoData);
+    if (!validation.isValid) {
+      this.logger.error('Todo validation failed', null, { errors: validation.errors });
+      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+    }
+  }
+
+  // NEW: Getter for cached todo (implementation detail)
+  getLastCreatedTodo() {
+    return this.lastCreatedTodo ? { ...this.lastCreatedTodo } : null;
   }
 
   async completeTodo(todoId, userEmail) {
@@ -78,7 +102,7 @@ class TodoService {
         updatedAt: this.clock.now().toISOString()
       });
 
-      // Track analytics
+      // REFACTOR: Changed order - analytics before notification
       this.analyticsService.track('todo_completed', {
         todoId: updatedTodo.id,
         timeToComplete: this._calculateCompletionTime(updatedTodo)
@@ -110,14 +134,16 @@ class TodoService {
         throw new Error(`Todo with id ${todoId} not found`);
       }
 
+      // REFACTOR: Analytics BEFORE deletion (changed order - will break sequence tests)
+      this.analyticsService.track('todo_deleted', {
+        todoId,
+        wasCompleted: todo.status === 'completed'
+      });
+
       const deleted = await this.todoRepository.delete(todoId);
       
       if (deleted) {
-        this.analyticsService.track('todo_deleted', {
-          todoId,
-          wasCompleted: todo.status === 'completed'
-        });
-        
+        // REFACTOR: Success log moved after analytics (different order)
         this.logger.info('Todo deleted successfully', { todoId });
       }
 
@@ -135,7 +161,7 @@ class TodoService {
     try {
       const todos = status 
         ? await this.todoRepository.findByStatus(status)
-        : await this.todoRepositor1y.findAll();
+        : await this.todoRepository.findAll();
 
       this.analyticsService.track('todos_listed', {
         status,
@@ -153,12 +179,8 @@ class TodoService {
   async updateTodo(todoId, updates) {
     this.logger.info('Updating todo', { todoId, updates });
 
-    // Validate updates
-    const validation = TodoValidator.validateForUpdate(updates);
-    if (!validation.isValid) {
-      this.logger.error('Todo update validation failed', null, { errors: validation.errors });
-      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
-    }
+    // REFACTOR: Use extracted validation method
+    this._validateUpdateData(updates);
 
     try {
       const existingTodo = await this.todoRepository.findById(todoId);
@@ -186,6 +208,15 @@ class TodoService {
     }
   }
 
+  // REFACTOR: Extracted update validation (implementation change)
+  _validateUpdateData(updates) {
+    const validation = TodoValidator.validateForUpdate(updates);
+    if (!validation.isValid) {
+      this.logger.error('Todo update validation failed', null, { errors: validation.errors });
+      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+    }
+  }
+
   async sendDailyDigest(userEmail) {
     this.logger.info('Sending daily digest', { userEmail });
 
@@ -193,13 +224,14 @@ class TodoService {
       const todoCount = await this.todoRepository.count();
       const pendingTodos = await this.todoRepository.findByStatus('pending');
 
-      await this.notificationService.sendDailyDigest(userEmail, todoCount);
-
+      // REFACTOR: Analytics before notification (changed order)
       this.analyticsService.track('daily_digest_sent', {
         userEmail,
         totalTodos: todoCount,
         pendingTodos: pendingTodos.length
       });
+
+      await this.notificationService.sendDailyDigest(userEmail, todoCount);
 
       return {
         totalTodos: todoCount,
@@ -213,10 +245,8 @@ class TodoService {
     }
   }
 
-  // Private helper methods
+  // Private helper methods (unchanged)
   async _scheduleReminder(todo) {
-    // In a real app, this would schedule a future notification
-    // For demo purposes, we'll just send an immediate notification
     await this.notificationService.sendReminder(
       `Reminder: ${todo.title} is due soon!`, 
       todo.userEmail

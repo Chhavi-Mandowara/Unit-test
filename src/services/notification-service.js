@@ -18,14 +18,13 @@ class NotificationService {
         status: 'sent'
       };
 
-      // Simulate async operation (email/push notification)
       await this._deliverNotification(notification);
-      
+
       this.sentNotifications.push(notification);
-      this.logger.info('Reminder notification sent', { 
-        todoTitle, 
+      this.logger.info('Reminder notification sent', {
+        todoTitle,
         userEmail,
-        notificationId: notification.id 
+        notificationId: notification.id
       });
 
       return notification;
@@ -47,13 +46,12 @@ class NotificationService {
 
     await this._deliverNotification(notification);
     this.sentNotifications.push(notification);
-    
+
     this.logger.info('Daily digest sent', { userEmail, todoCount });
     return notification;
   }
 
   async _deliverNotification(notification) {
-    // Simulate network delay
     return new Promise(resolve => {
       setTimeout(() => resolve(), 10);
     });

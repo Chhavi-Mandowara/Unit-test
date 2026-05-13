@@ -8,15 +8,14 @@ class TodoRepository {
   }
 
   async save(todo) {
-    // Simulate async database operation
     await this._simulateDbDelay();
-    
+
     if (!todo.id) {
       todo.id = this.nextId++;
       todo.createdAt = new Date().toISOString();
     }
     todo.updatedAt = new Date().toISOString();
-    
+
     this.todos.set(todo.id, { ...todo });
     return { ...todo };
   }
@@ -51,14 +50,12 @@ class TodoRepository {
     return this.todos.size;
   }
 
-  // Test helper methods
   clear() {
     this.todos.clear();
     this.nextId = 1;
   }
 
   async _simulateDbDelay() {
-    // Simulate database latency
     return new Promise(resolve => {
       setTimeout(resolve, 1);
     });
